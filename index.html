@@ -1590,6 +1590,87 @@ async function loadBlogPosts() {
 document.addEventListener('DOMContentLoaded', loadBlogPosts);
 </script>
 
+<script>
+async function loadBlogPosts() {
+    const blogList = document.getElementById('blog-list');
+
+    try {
+        const response = await fetch(
+            'https://api.github.com/repos/hongdiamond/ktxsv1/contents/blog?ref=main',
+            { cache: 'no-store' }
+        );
+
+        const files = await response.json();
+
+        const htmlFiles = files
+            .filter(file =>
+                file.type === 'file' &&
+                file.name.endsWith('.html') &&
+                !file.name.startsWith('test-')
+            )
+            .reverse();
+
+        blogList.innerHTML = '';
+
+        for (const file of htmlFiles) {
+
+            const pageResponse = await fetch(file.download_url, {
+                cache: 'no-store'
+            });
+
+            const html = await pageResponse.text();
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const title =
+                doc.querySelector('h1')?.textContent?.trim()
+                || file.name.replace('.html', '').replaceAll('-', ' ');
+
+            const description =
+                doc.querySelector('p')?.textContent?.trim()
+                || 'Xem bài viết và kinh nghiệm dành cho sinh viên.';
+
+            const article = document.createElement('article');
+
+            article.className =
+                'bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition';
+
+            article.innerHTML = `
+                <h3 class="text-xl font-bold text-slate-900 mb-3">
+                    ${title}
+                </h3>
+
+                <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+                    ${description.substring(0, 180)}...
+                </p>
+
+                <a
+                    href="blog/${file.name}"
+                    class="inline-flex items-center font-semibold text-teal-600 hover:text-teal-800"
+                >
+                    Xem bài viết →
+                </a>
+            `;
+
+            blogList.appendChild(article);
+        }
+
+        if (htmlFiles.length === 0) {
+            blogList.innerHTML =
+                '<p class="text-slate-500">Chưa có bài viết.</p>';
+        }
+
+    } catch (error) {
+        console.error(error);
+
+        blogList.innerHTML =
+            '<p class="text-red-500">Không tải được danh sách bài viết.</p>';
+    }
+}
+
+loadBlogPosts();
+</script> 
 </body>
 
 </html>
